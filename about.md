@@ -4,12 +4,12 @@ title: About
 permalink: /about/
 ---
 
-Some information about you!
+Full Stack Software Engineer
 
 ### More Information
 
-A place to include any other types of information that you'd like to include about yourself.
+Some day this may be filled in.
 
 ### Contact me
 
-[email@domain.com](mailto:email@domain.com)
+[awaters1@gmail.com](mailto:awaters1@gmail.com)
