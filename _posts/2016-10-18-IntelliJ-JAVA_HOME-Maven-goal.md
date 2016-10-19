@@ -2,10 +2,13 @@
 layout: post
 title: JAVA_HOME where art thou?
 published: true
+tags: errors
 ---
 
 Today while running a [Maven](https://maven.apache.org/) goal during the pre-build 
-phase of my project I received the error
+phase of my project I received an error about being unable to find the javadoc command
+due to JAVA_HOME not being correctly set.
+
 > Failed to execute goal org.apache.maven.plugins:maven-javadoc-plugin:2.9.1:javadoc Unable to find javadoc command: 
 > The environment variable JAVA_HOME is not correctly set
 
