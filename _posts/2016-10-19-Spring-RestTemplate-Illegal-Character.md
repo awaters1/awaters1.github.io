@@ -1,7 +1,7 @@
 ---
 layout: post
 title: Spring RestTemplate Illegal Character - JsonParseException
-published: false
+published: true
 ---
 
 [Spring's](https://spring.io/) [RestTemplate](http://docs.spring.io/spring-framework/docs/current/javadoc-api/org/springframework/web/client/RestTemplate.html)
@@ -42,4 +42,8 @@ request factory is very simple.
 restTemplate.setRequestFactory(new HttpComponentsClientHttpRequestFactory());
 {% endhighlight %}
 
-// TODO conclusion
+The URL quoted above should not have returned gzip data because the request headers
+did not contain Accept-Encoding: 'gzip', but not every implementation follows the rules.
+Fortunately for us the Spring Framework has created a very configurable ```RestTemplate``` that allowed
+us to plug in a more capable request factory that allowed us to retrieve and parse JSON
+data with minimal lines of code.
