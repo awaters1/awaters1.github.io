@@ -1,7 +1,7 @@
 ---
 layout: post
 title: Picking the right framework
-published: false
+published: true
 ---
 
 Or more aptly, as it usually turns out to be, picking the 
@@ -22,16 +22,18 @@ in that case.
 2. __Community__: Look at the forums and observe
 the popular topics and determine the pain points.  Don't spend
 too much time here though, every framework has wrinkles, but 
-can you function with those wrinkles is what you want to find out.
-3. __Design Patterns__: 
--Also include something about the framework feeling familiar, don't want
-to go to something too radical to begin with, but save it for later
-to research as an alternative
--As long as the framework applies common design patterns,
+whether you can function with those wrinkles is what you want to find out.
+3. __Design Patterns__:  The framework should also feel familiar, meaning
+that it uses design patterns present in the alternatives.  The patterns
+ should also make sense and have real benefits. 
+ As long as the framework applies common design patterns,
 the code you write, that adds value to the organization
-is portable and transferrable.
+is portable and transferrable.  Be careful with choosing something
+that may be too radical,  however, I would save it for later
+to research as a topic to learn about.
 
 Lastly, don't get too hung up on choosing a framework
 on the first day.  These days every framework has a
-quick 5-10 minute tutorial that do a decent job
-of introducing you to the major components.
+quick 5-10 minute tutorial that will do a decent job
+of introducing you to the major components that should
+set you on your way.
