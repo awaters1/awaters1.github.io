@@ -38,11 +38,9 @@ I started to receive connection issues.  The error was
 The conclusion I came to was Twitter was closing the connection on
 their end, for what reason I did not know at the time.  In the mean time
 I decided to check the MongoDB collection and behold there is all
-that data, it clocked in at about 8 gigs of space with half a million
+that data, it clocked in at about 4 gigs of space with half a million
 tweets.  I'm not sure how long it took it to get there, but it was definitely
 way faster than 100 tweets/second.
-
-// TODO: Include the sample code that I created.
 
 As you could have guessed Twitter was closing the connection on their
 end because I was reading the stream too slowly and
