@@ -9,7 +9,7 @@ _perfect_ framework. Picking the perfect language, the perfect
 framework, perfect library, perfect platform, perfect 
 widget library, you get the idea.  
 
-Perfect framework is the one you choose today or tommorrow,
+Perfect framework is the one you choose today or tomorrow,
 not the one you choose in a month after timeless debate that
 leads no where.
 
@@ -28,7 +28,7 @@ that it uses design patterns present in the alternatives.  The patterns
  should also make sense and have real benefits. 
  As long as the framework applies common design patterns,
 the code you write, that adds value to the organization
-is portable and transferrable.  Be careful with choosing something
+is portable and transferable.  Be careful with choosing something
 that may be too radical,  however, I would save it for later
 to research as a topic to learn about.
 

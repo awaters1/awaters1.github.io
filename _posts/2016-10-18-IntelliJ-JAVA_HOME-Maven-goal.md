@@ -23,7 +23,7 @@ deep into IntelliJ's settings.  The exact path is __Build, Execution, Deployment
 then __Build Tools__, next __Maven__, and last but not least __Runner__. 
 Here you will be greeted with another Environment Variables field, 
 this one being the correct one to set JAVA_HOME.
-![IntilliJ JAVA_HOME Maven Environment Variable](/images/java_home_intellij_javadoc_mac_osx.png)
+![IntelliJ JAVA_HOME Maven Environment Variable](/images/java_home_intellij_javadoc_mac_osx.png)
 
 Following those steps should get you up and running, if you need help
 finding out what to set as JAVA_HOME should be execute the command

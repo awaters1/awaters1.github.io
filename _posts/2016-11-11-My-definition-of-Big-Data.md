@@ -13,7 +13,7 @@ but doing a better job than me of faking it 'till they made it.
 
 It took a little while for me to become used to Big Data.
 I took some classes on Coursera, which was great by the way,
-they gave a good introduction.  I worked with large datasets
+they gave a good introduction.  I worked with large data sets
 at work, or so I thought, I learned new technologies like
 Apache Spark and MapReduce methodologies. I even worked with
 some Facebook data that was ingested through AWS Lambda but none
@@ -31,7 +31,7 @@ I started with two jobs to run on the executor, when one finished
 it would schedule another one.  It seemed like it would work out well
 and be able to take messages off of the queue fast enough, and it did
 work very well, perhaps too well.  The first time I executed the code
-it appread to be working well, no errors were printed until
+it appeared to be working well, no errors were printed until
 I started to receive connection issues.  The error was
  ```Unexpected end of ZLIB input stream```.  This brought down
  a rabbit hole of debugging and figuring out the source of the error.
@@ -46,7 +46,7 @@ As you could have guessed Twitter was closing the connection on their
 end because I was reading the stream too slowly and
 ended up hitting the number of re-connection attempts. 
 
-So what is my definiton of Big Data? Well to be honest it
+So what is my definition of Big Data? Well to be honest it
 is data that once you start working with it you
 think to your self "damn that is a lot".  Too much for your
 crappy Internet, too fast for your spinning rust and
