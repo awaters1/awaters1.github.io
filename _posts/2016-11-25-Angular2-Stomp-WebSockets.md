@@ -14,7 +14,7 @@ The goal of the client side implementation will be to create a WebSocket
 connection to the server and allow for subscribing to pre-defined topics
 through RxJS Observables.
 All of this will be implemented within an Angular2 service that is designed
-to be injected any component's constructor.
+to be injected into any component's constructor.
 
 I'll start with the code first and then describe how it works
 {% highlight typescript %}
@@ -51,10 +51,18 @@ constructor(private http: Http) {
   }).share();
 }
 {% endhighlight %}
-TODO: Describe the code above
+Within the constructor the first thing we do is create an Observable
+that will be used for the inital connection to the WebSocket.  The Observable
+is responsible for creating the inital SockJS connection and the Stomp client.
+Once the connection callback is executed the Observable for the topic is
+initialized.  The Observable for the topic is responsible for subscribing
+to the topic and pushing JSON objects to the Observable.  The nice part of this
+is that it is simple to unsubscribe from the topic and disconnect from the WebSocket
+by unsubscribing from the underlying Observables.  There are some short falls
+in this solution though, it doesn't handle reconnects and it won't work with multiple subscriptions
+to websocketObservable because ```next``` is only called upon first connect.
 
-That service will be responsible for managing the WebSocket, the next
-step will be to actually use it within a component, an example of that is below.
+The next step will be to actually use it within a component, an example of that is below.
 {% highlight typescript %}
 constructor(private websocketService: WebsocketService) {
   this.websocketService.websocketObservable.subscribe((result) => {
@@ -65,6 +73,10 @@ constructor(private websocketService: WebsocketService) {
   });
 }
 {% endhighlight %}
+Here we just subscribe to the WebSocket Observable and then once we get
+a result, which is just an empty Object we then subscribe to the topic Observable.
+As new messages come in through the WebSocket for that topic a message is
+printed on the console.
 
 This should help you figure out how to get a Stomp WebSockjet backend communicating
 with an Angular2 front end.  The beauty of this is that the messages come through 
