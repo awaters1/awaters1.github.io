@@ -19,7 +19,7 @@ and just requires choosing the right settings.
 The bulk of client side is contained in two libraries
 angularfire2 and firebase.  The latest version of angularfire2
 is good enough, but make sure to use firebase 3.4.0 to 
-avoid the TODO: error.  Just import the ```AngularFire``` component
+avoid the error ```TypeError: Cannot read property 'FacebookAuthProvider' of undefined```.  Just import the ```AngularFire``` component
 and have it injected into the constructor, from there you
 can use the method ```this.af.auth.login()``` to start the login flow.
 The code below demonstrates some common functionality of angularfire2.
@@ -55,3 +55,5 @@ export class ToolbarComponent {
   }
 }
 {% endhighlight %}
+
+In part 2 of this series we will work with Spring Security.
