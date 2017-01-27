@@ -5,53 +5,89 @@ published: true
 ---
 
 This post continues the work from part 1 of 
-[Spring Boot and Single On with Firebase]({% post_url 2016-12-15-Spring-Boot-Single-Sign-On-Firebase %}).
+[Spring Boot and Single On with Firebase]({% post_url 2017-01-26-Spring-Boot-Single-Sign-On-Firebase %}).
 As seen before the client side is fairly simple with most of the work
 being done by angular2fire.  The server side, with Spring Boot, 
 involves a few more steps to integrate it properly with
 Spring Security.
 
-In order to use this solution you first need to setup
-your Firebase account.  This procedure is fairly straight forward
-and just requires choosing the right settings.  
+In our example the Firebase JWT token is passed in through the
+X-Firebase-Auth header and assumes any url under the path /auth requires authentication. 
+In order to handle that in Spring
+Security we will use a ```ServletFilter``` that is invoked
+before control passes to Spring Security.  The filter can be seen below,
+for more details on its operation see https://www.toptal.com/java/rest-security-with-jwt-spring-security-and-java
 
+{% highlight java %}
+public class FirebaseAuthenticationTokenFilter extends AbstractAuthenticationProcessingFilter {
 
-The bulk of client side is contained in two libraries
-angularfire2 and firebase.  The latest version of angularfire2
-is good enough, but make sure to use firebase 3.4.0 to 
-avoid the TODO: error.  Just import the ```AngularFire``` component
-and have it injected into the constructor, from there you
-can use the method ```this.af.auth.login()``` to start the login flow.
-The code below demonstrates some common functionality of angularfire2.
+	private final static String TOKEN_HEADER = "X-Firebase-Auth";
 
-{% highlight typescript %}
-import { Component } from '@angular/core';
-import { AngularFire } from 'angularfire2';
+	public FirebaseAuthenticationTokenFilter() {
+		super("/auth/**");
+	}
+	
+	@Override
+	public Authentication attemptAuthentication(HttpServletRequest request, HttpServletResponse response) {
+		final String authToken = request.getHeader(TOKEN_HEADER);
+		if (Strings.isNullOrEmpty(authToken)) {
+			throw new RuntimeException("Invaild auth token");
+		}
 
-@Component()
-export class ToolbarComponent { 
-  private auth: any;
-  constructor(public af: AngularFire) {
-    // When the auth state changes we can get a copy
-    this.af.auth.subscribe(auth => {
-      this.auth = auth;
-    });
-  }
+		return getAuthenticationManager().authenticate(new FirebaseAuthenticationToken(authToken));
+	}
+	
+  /**
+     * Make sure the rest of the filterchain is satisfied
+     *
+    */
+    @Override
+    protected void successfulAuthentication(HttpServletRequest request, HttpServletResponse response, FilterChain chain, Authentication authResult)
+            throws IOException, ServletException {
+        super.successfulAuthentication(request, response, chain, authResult);
 
-  getToken() {
-    // Obtain JWT access token
-    this.auth.auth.getToken().then((token: string) => {
-      console.log(token);
-    })
-  }
+        // As this authentication is in HTTP header, after success we need to continue the request normally
+        // and return the response as if the resource was not secured at all
+        chain.doFilter(request, response);
+    }
+}
+{% endhighlight %}
 
-  login() {
-    // Start login flow
-    this.af.auth.login();
-  }
+The filter should be before any Spring Security filter, so something like
 
-  logout() {
-    this.af.auth.logout();
-  }
+{% highlight java %}
+httpSecurity.addFilterBefore(authenticationTokenFilterBean(), UsernamePasswordAuthenticationFilter.class);
+{% endhighlight %}
+
+The last step is to use an authentication provider to supply the ```UserDetails```
+
+{% highlight java %}
+@Component
+public class FirebaseAuthenticationProvider extends AbstractUserDetailsAuthenticationProvider {
+
+    @Autowired
+    private FirebaseAuth firebaseAuth;
+
+    @Override
+    public boolean supports(Class<?> authentication) {
+        return (FirebaseAuthenticationToken.class.isAssignableFrom(authentication));
+    }
+
+    @Override
+    protected void additionalAuthenticationChecks(UserDetails userDetails, UsernamePasswordAuthenticationToken authentication) throws AuthenticationException {
+    }
+
+    @Override
+    protected UserDetails retrieveUser(String username, UsernamePasswordAuthenticationToken authentication) throws AuthenticationException {
+        final FirebaseAuthenticationToken authenticationToken = (FirebaseAuthenticationToken) authentication;
+        final CompletableFuture<FirebaseToken> future = new CompletableFuture<>();
+        firebaseAuth.verifyIdToken(authenticationToken.getToken()).addOnSuccessListener(future::complete);
+		try {
+			final FirebaseToken token = future.get();
+			return new FirebaseUserDetails(token.getEmail(), token.getUid());
+		} catch (InterruptedException | ExecutionException e) {
+			throw new SessionAuthenticationException(e.getMessage());
+		}
+    }
 }
 {% endhighlight %}
