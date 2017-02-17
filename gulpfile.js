@@ -11,7 +11,8 @@ gulp.task('build', shell.task(['jekyll build --watch  --drafts --future']));
 gulp.task('serve', function () {
     bs.init({
     	server: {baseDir: '_site/'},
-    	reloadDebounce: 500
+    	reloadDebounce: 500,
+        reloadDelay: 500
     });
     // Reloads page when some of the already built files changed:
     gulp.watch('_site/**/*.*').on('change', bs.reload);
