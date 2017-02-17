@@ -100,3 +100,11 @@ jsdom.env({
 
 With those steps completed we can now properly generate code coverage information with
 Istanbul + JSDom + Mocha.
+
+TODO: Mayneed the after each
+afterEach(function () {
+        chrome.reset();
+        global[testUtil.coverageVar] = window[testUtil.coverageVar];
+        window.close();  
+    });
+
