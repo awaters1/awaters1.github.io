@@ -4,142 +4,99 @@ title: Javascript Code Coverage with Istanbul + JSDom + Mocha
 published: true
 ---
 
-This post continues the work from part 1 of 
-[Spring Boot and Single On with Firebase]({% post_url 2017-01-26-Spring-Boot-Single-Sign-On-Firebase %}).
-As seen before the client side is fairly simple with most of the work
-being done by angular2fire.  The server side, with [Spring Boot](https://projects.spring.io/spring-boot/), 
-involves a few more steps to integrate it properly with
-[Spring Security](https://projects.spring.io/spring-security/).
+In this post I'll describe a method of generating code coverage with [Istanbul](https://github.com/gotwarlost/istanbul)
+ while using [JSDom](https://github.com/tmpvar/jsdom) and [Mocha](https://mochajs.org/). Normally
+ these three work well together, but that is when you use ```require``` to import your javascript code.
+ If you take adavantage of JSDom's ability to load Javascript files from the filesystem you will 
+ left in the dark with respect to coverage information.
 
-In our example the [Firebase](https://firebase.google.com/) JWT token is passed in through the
-X-Firebase-Auth header and assumes any url under the path /auth requires authentication. 
-In order to handle that in Spring
-Security we will use a ```ServletFilter``` that is invoked
-before control passes to Spring Security.  The filter can be seen below,
-for more details on its operation see [REST Security with JWT using Java and Spring Security](https://www.toptal.com/java/rest-security-with-jwt-spring-security-and-java).
-
-{% highlight java %}
-public class FirebaseAuthenticationTokenFilter extends AbstractAuthenticationProcessingFilter {
-
-    private final static String TOKEN_HEADER = "X-Firebase-Auth";
-
-    public FirebaseAuthenticationTokenFilter() {
-        super("/auth/**");
-    }
-    
-    @Override
-    public Authentication attemptAuthentication(HttpServletRequest request, HttpServletResponse response) {
-        final String authToken = request.getHeader(TOKEN_HEADER);
-        if (Strings.isNullOrEmpty(authToken)) {
-            throw new RuntimeException("Invaild auth token");
-        }
-
-        return getAuthenticationManager().authenticate(new FirebaseAuthenticationToken(authToken));
-    }
-    
-  /**
-     * Make sure the rest of the filterchain is satisfied
-     *
-    */
-    @Override
-    protected void successfulAuthentication(HttpServletRequest request, HttpServletResponse response, FilterChain chain, Authentication authResult)
-            throws IOException, ServletException {
-        super.successfulAuthentication(request, response, chain, authResult);
-
-        // As this authentication is in HTTP header, after success we need to continue the request normally
-        // and return the response as if the resource was not secured at all
-        chain.doFilter(request, response);
-    }
-}
-{% endhighlight %}
-
-The filter should be before any Spring Security filter, so something like
-
-{% highlight java %}
-httpSecurity.addFilterBefore(authenticationTokenFilterBean(), UsernamePasswordAuthenticationFilter.class);
-{% endhighlight %}
-
-The last step is to use an authentication provider to supply the ```UserDetails```
-
-{% highlight java %}
-@Component
-public class FirebaseAuthenticationProvider extends AbstractUserDetailsAuthenticationProvider {
-
-    @Autowired
-    private FirebaseAuth firebaseAuth;
-
-    @Override
-    public boolean supports(Class<?> authentication) {
-        return (FirebaseAuthenticationToken.class.isAssignableFrom(authentication));
-    }
-
-    @Override
-    protected void additionalAuthenticationChecks(UserDetails userDetails, UsernamePasswordAuthenticationToken authentication) throws AuthenticationException {
-    }
-
-    @Override
-    protected UserDetails retrieveUser(String username, UsernamePasswordAuthenticationToken authentication) throws AuthenticationException {
-        final FirebaseAuthenticationToken authenticationToken = (FirebaseAuthenticationToken) authentication;
-        final CompletableFuture<FirebaseToken> future = new CompletableFuture<>();
-        firebaseAuth.verifyIdToken(authenticationToken.getToken()).addOnSuccessListener(future::complete);
-        try {
-            final FirebaseToken token = future.get();
-            return new FirebaseUserDetails(token.getEmail(), token.getUid());
-        } catch (InterruptedException | ExecutionException e) {
-            throw new SessionAuthenticationException(e.getMessage());
+ Normally loading Javascript using JSDom goes something like this:
+{% highlight javascript %}
+jsdom.env({
+    // generated background page
+    html: '<html></html>',
+    // js source
+    src: [
+        fs.readFileSync('lib/myLib.js', 'utf-8'),
+    ],
+    created: function (errors, wnd) {
+    },
+    done: function (errors, wnd) {
+        if (errors) {
+            console.log(errors);
+            done(true);
+        } else {
+            window = wnd;
+            done();
         }
     }
+});
+{% endhighlight %}
+Since ```myLib.js``` isn't loaded through ```require``` it won't be instrumented 
+automatically with Istanbul.  However, that doesn't mean that it cannot be instrumented some other way.
+The key will be to instrument the code before passing it off to JSDom, then to perform some
+variable magic to expose the coverage information in ```global``` to be picked up by Istanbul when
+the test is complete.
+
+The first thing to do is to generate instrumented code, this is simple with Istanbul`s API.
+{% highlight javascript %}
+var istanbul = require('istanbul');
+
+function instrument(file) {
+    var js = fs.readFileSync(file, 'utf-8');
+
+    var instrumenter = new istanbul.Instrumenter({
+        coverageVariable: coverageVar,
+    });
+    var filename = fs.realpathSync(file);
+    var generatedCode = instrumenter.instrumentSync(js, filename);
+    return generatedCode;
 }
 {% endhighlight %}
+The relevant parts of the JSDom setup now become: 
+{% highlight javascript %}
+jsdom.env({
+    src: [
+        instrument('lib/myLib.js')
+    ]
+});
+{% endhighlight %}
+So instead of loading the file directly into JSDom, we just instrument it first, then pass it 
+into JSDom for testing.
 
-The work flow here is to pass the JWT token from the client side into an HTTP header, ```X-Firebase-Auth``` in this case.
-Then, the servlet filter is responsible for turning the value into a valid ```UserDetails``` object by ```authenticate``` on the
-authentication manager.   Since ```FirebaseAuthenticationProvider``` is registered with the authentication manager and supports
-the token we specify, ```FirebaseAuthenticationToken```, its ```retrieveUser``` method is invoked.  Within this method the actuall
-token is verified against firebase with ```verifyIdToken```.  If things work out an instance of ```FirebaseUserDetails``` is returned,
-otherwise an authentication exception is thrown.  The filter catches the successfull authentication and instructs the chain to continue
-and process the user's request.
+One piece I didn't elaborate on here was where ```coverageVariable``` comes from.  The way Istanbul works
+is that it keeps coverage information in a global variable.  As instrumented code is executed this global variable
+is updated and when the test is complete Istanbul generates its report from this variable.  The issue
+that we have when we instrument our code is we don't get access to this variable from Istanbul's API.
+However, there is a way around this, we can sniff the variable from the global scope with something like
+the following
+{% highlight javascript %}
+var coverageVar = (
+    function() {
+        var coverageVar;
+        for(var key of Object.keys(global)) {
+            if (/\$\$cov_\d+\$\$/.test(key)) {
+                coverageVar = key;
+            }
+        }
+        console.log('Coverage var:', coverageVar);
+        return coverageVar;
+    }
+)();
+{% endhighlight %}
+The one downfall of this is that it is brittle, depending on what Istanbul decides to use name
+their coverage variable, at this moment they use the following ``` var coverageVar = '$$cov_' + new Date().getTime() + '$$'```.
 
-As a final step be sure to setup the above classes within Spring Security with something like
-{% highlight java %}
-   
-@Autowired
-private FirebaseAuthenticationProvider authenticationProvider;
-
-@Bean
-@Override
-public AuthenticationManager authenticationManager() throws Exception {
-    return new ProviderManager(Arrays.asList(authenticationProvider));
-}
-
-
-public FirebaseAuthenticationTokenFilter authenticationTokenFilterBean() throws Exception {
-    FirebaseAuthenticationTokenFilter authenticationTokenFilter = new FirebaseAuthenticationTokenFilter();
-    authenticationTokenFilter.setAuthenticationManager(authenticationManager());
-    authenticationTokenFilter.setAuthenticationSuccessHandler((request, response, authentication) -> {});
-    return authenticationTokenFilter;
-}
-
-@Override
-public void configure(WebSecurity web) throws Exception {
-    web.ignoring()
-        .antMatchers(HttpMethod.OPTIONS);
-}
-
-@Override
-protected void configure(HttpSecurity httpSecurity) throws Exception {
-    httpSecurity
-            .cors()
-            .and()
-            .csrf().disable()
-            .authorizeRequests()
-                .antMatchers(HttpMethod.OPTIONS).permitAll()
-                .antMatchers("/auth/**").authenticated()
-            .and()
-            .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS);
-    httpSecurity.addFilterBefore(authenticationTokenFilterBean(), UsernamePasswordAuthenticationFilter.class);
-}
+Now that our code is properly instrumented we have one remaining step, we have to manage the coverage variable
+within JSDom.  We do this by just setting the coverage variable in the new ```window``` that JSDom creates.
+{% highlight javascript %}
+jsdom.env({
+    created: function (errors, wnd) {
+        // pass the coverage variable into the new window
+        wnd[coverageVar] = global[coverageVar];
+    },
+});
 {% endhighlight %}
 
-That should wrap it up, it does take quite a bit to configure all of the moving pieces, however, it will save a lot of hassle
-of having to manage your own authentication mechanism.
+With those steps completed we can now properly generate code coverage information with
+Istanbul + JSDom + Mocha.
