@@ -12,7 +12,7 @@ involves a few more steps to integrate it properly with
 [Spring Security](https://projects.spring.io/spring-security/).
 
 In our example the [Firebase](https://firebase.google.com/) JWT token is passed in through the
-X-Firebase-Auth header and assumes any url under the path /auth requires authentication. 
+X-Firebase-Auth header and assumes any url under the path ```/auth``` requires authentication. 
 In order to handle that in Spring
 Security we will use a ```ServletFilter``` that is invoked
 before control passes to Spring Security.  The filter can be seen below,
@@ -95,9 +95,9 @@ public class FirebaseAuthenticationProvider extends AbstractUserDetailsAuthentic
 The work flow here is to pass the JWT token from the client side into an HTTP header, ```X-Firebase-Auth``` in this case.
 Then, the servlet filter is responsible for turning the value into a valid ```UserDetails``` object by ```authenticate``` on the
 authentication manager.   Since ```FirebaseAuthenticationProvider``` is registered with the authentication manager and supports
-the token we specify, ```FirebaseAuthenticationToken```, its ```retrieveUser``` method is invoked.  Within this method the actuall
-token is verified against firebase with ```verifyIdToken```.  If things work out an instance of ```FirebaseUserDetails``` is returned,
-otherwise an authentication exception is thrown.  The filter catches the successfull authentication and instructs the chain to continue
+the token we specify, ```FirebaseAuthenticationToken```, its ```retrieveUser``` method is invoked.  Within this method the actual
+token is verified against Firebase with ```verifyIdToken```.  If things work out an instance of ```FirebaseUserDetails``` is returned,
+otherwise an authentication exception is thrown.  The filter catches the successful authentication and instructs the chain to continue
 and process the user's request.
 
 As a final step be sure to setup the above classes within Spring Security with something like
