@@ -7,7 +7,7 @@ published: true
 In this post I'll describe a method of generating code coverage with [Istanbul](https://github.com/gotwarlost/istanbul)
  while using [JSDom](https://github.com/tmpvar/jsdom) and [Mocha](https://mochajs.org/). Normally
  these three work well together, but that is when you use ```require``` to import your javascript code.
- If you take adavantage of JSDom's ability to load Javascript files from the filesystem you will 
+ If you take adavantage of JSDom's ability to load Javascript files from the filesystem you will be
  left in the dark with respect to coverage information.
 
  Normally loading Javascript using JSDom goes something like this:
@@ -99,12 +99,6 @@ jsdom.env({
 {% endhighlight %}
 
 With those steps completed we can now properly generate code coverage information with
-Istanbul + JSDom + Mocha.
-
-TODO: Mayneed the after each
-afterEach(function () {
-        chrome.reset();
-        global[testUtil.coverageVar] = window[testUtil.coverageVar];
-        window.close();  
-    });
+Istanbul + JSDom + Mocha.  One could also write a hook for ```readFileSync``` within Istanbul
+that would perform similar work that the hook for ```require``` does.
 
