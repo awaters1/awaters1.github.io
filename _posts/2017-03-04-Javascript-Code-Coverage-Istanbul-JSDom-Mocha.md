@@ -101,4 +101,3 @@ jsdom.env({
 With those steps completed we can now properly generate code coverage information with
 Istanbul + JSDom + Mocha.  One could also write a hook for ```readFileSync``` within Istanbul
 that would perform similar work that the hook for ```require``` does.
-
